@@ -31,6 +31,15 @@
 (require 'edts-api)
 (require 'edts-navigate)
 
+(defcustom edts-doc-buffer "edts-doc"
+  "Name of the buffer to show edts function documentation")
+
+(defcustom edts-doc-style 'tooltip
+  "Preferred style to show function documentation"
+
+  :type '(choice (const :tag "Show in an inline tooltip" tooltip)
+                 (const :tag "Show in a dedicated buffer" buffer)))
+
 (eval-and-compile
   (defvar edts-built-in-functions
     '("abs/1"
@@ -294,11 +303,15 @@ in a tooltip."
          (arity    (caddr mfa)))
     (unless (and module function arity)
       (error "Could not parse MFA at point"))
-    (edts-show-tooltip
-     (condition-case ex
-         (edts-man-extract-function-entry module function)
-       ('error
-        (edts-extract-doc-from-source module function arity))))))
+
+    (let ((doc (condition-case ex
+                   (edts-man-extract-function-entry module function)
+                 ('error
+                  (edts-extract-doc-from-source module function arity)))))
+
+      (if (eq edts-doc-style 'tooltip)
+          (edts-show-tooltip doc)
+        (edts-show-temp-buffer doc)))))
 
 (defun edts-show-tooltip (text)
   "Show a tooltip using either popup.el or pos-tip.el"
@@ -306,6 +319,11 @@ in a tooltip."
       (pos-tip-show text nil nil nil -1)
     ('error
      (popup-tip text))))
+
+(defun edts-show-temp-buffer (text)
+  "Show a temporary buffer with documentation"
+  (with-output-to-temp-buffer edts-doc-buffer
+    (prin1 text)))
 
 (defun edts-extract-doc-from-source (module function arity)
   "Find documentation for MODULE:FUNCTION/ARITY"
