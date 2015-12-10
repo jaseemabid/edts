@@ -322,8 +322,10 @@ in a tooltip."
 
 (defun edts-show-temp-buffer (text)
   "Show a temporary buffer with documentation"
-  (with-output-to-temp-buffer edts-doc-buffer
-    (prin1 text)))
+  (with-current-buffer-window
+   edts-doc-buffer nil nil
+   (insert text)
+   (help-mode)))
 
 (defun edts-extract-doc-from-source (module function arity)
   "Find documentation for MODULE:FUNCTION/ARITY"
